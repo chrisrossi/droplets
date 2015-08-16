@@ -237,12 +237,6 @@ class DigitalOceanInventory(object):
                     hosts.append(host)
                     hostvars[host] = {'droplet': droplet}
 
-                prefix = 'db-backup-{0}-'.format(droplet['name'])
-                backups = sorted((os.path.join('backups', fname)
-                           for fname in os.listdir('backups')
-                           if fname.startswith(prefix)))
-                hostvars[host]['db_backup'] = backups[-1] if backups else False
-
             inventory[groupname] = {'hosts': hosts, 'vars': vars}
 
         inventory['_meta'] = {'hostvars': hostvars}
