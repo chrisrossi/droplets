@@ -36,7 +36,7 @@ Options:
 
 def main(api_token, blueprint,
          image='ubuntu-14-04-x64',
-         size='1gb',
+         size='512mb',
          region='nyc3',
          prefix=''):
     args = docopt(usage)
@@ -110,7 +110,7 @@ class DigitalOceanInventory(object):
 
     def __init__(self, token, blueprint,
                  image='ubuntu-14-04-x64',
-                 size='1gb',
+                 size='512mb',
                  region='nyc3',
                  prefix=''):
         self.token = token
