@@ -19,7 +19,7 @@ try:
 except IOError:
     README = CHANGES = ''
 
-setup(name='acidfs',
+setup(name='droplets',
       version=VERSION,
       description='Library for building Ansible dynamic inventories for '
                   'Digital Ocean.',
