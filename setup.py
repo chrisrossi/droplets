@@ -6,6 +6,9 @@ VERSION = '1.0dev'
 
 requires = [
     'docopt',
+    'ndg-httpsclient',
+    'pyasn1',
+    'pyopenssl',
     'requests',
 ]
 
