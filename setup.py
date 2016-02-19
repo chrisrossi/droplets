@@ -1,6 +1,5 @@
 import os
 from setuptools import setup
-from setuptools import find_packages
 
 VERSION = '1.0dev'
 
@@ -40,7 +39,7 @@ setup(name='droplets',
       author_email="chris@armchimedeanco.com",
       url="http://github.com/chrisrossi/droplets",
       license="BSD-derived (http://www.repoze.org/LICENSE.txt)",
-      packages=find_packages(),
+      pymodules=["droplets"],
       include_package_data=True,
       zip_safe=False,
       install_requires=requires)
