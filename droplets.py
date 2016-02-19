@@ -57,10 +57,9 @@ def main(api_token, blueprint,
         if args['--reconcile'] or args['--human']:
             for name, vars in api.inventory.items():
                 if 'hosts' in vars:
-                    print '%s: %s' % (name, ' '.join(vars['hosts']))
+                    print('%s: %s') % (name, ' '.join(vars['hosts']))
         else:
-            print json.dumps(api.inventory, indent=4)
-
+            print(json.dumps(api.inventory, indent=4))
 
 
 def first_with(seq, cond):
@@ -253,6 +252,7 @@ class DigitalOceanInventory(object):
                 n = self.blueprint[group].get('n', 1)
                 if i >= n:
                     self.destroy_droplet(droplet)
+
 
 def install_hostkeys(api):
     for group in api.inventory.values():
