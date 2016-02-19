@@ -106,7 +106,7 @@ def api_token_from_env():
     if do_token in os.environ:
         return os.environ[do_token]
     else:
-        raise LookupError('(required) %s environment variable not found.')
+        raise LookupError('(required) %s environment variable not found.' % (do_token))
 
 
 class DigitalOceanInventory(object):
