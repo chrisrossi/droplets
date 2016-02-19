@@ -11,6 +11,9 @@ requires = [
     'requests',
 ]
 
+setup_requires = ['pytest-runner']
+tests_require = ['pytest']
+
 here = os.path.abspath(os.path.dirname(__file__))
 try:
     README = open(os.path.join(here, 'README.rst')).read()
@@ -42,4 +45,6 @@ setup(name='droplets',
       pymodules=["droplets"],
       include_package_data=True,
       zip_safe=False,
-      install_requires=requires)
+      install_requires=requires,
+      setup_requires=setup_requires,
+      tests_require=tests_require)
