@@ -34,12 +34,17 @@ Options:
 """.format(sys.argv[0])
 
 
-def main(api_token, blueprint,
+def main(blueprint,
          image='ubuntu-14-04-x64',
          size='512mb',
          region='nyc3',
-         prefix=''):
+         prefix='',
+         api_token=None,):
     args = docopt(usage)
+
+    if api_token is None:
+        api_token = api_token_from_env()
+
     api = DigitalOceanInventory(
         api_token, blueprint,
         image=image,
@@ -57,10 +62,9 @@ def main(api_token, blueprint,
         if args['--reconcile'] or args['--human']:
             for name, vars in api.inventory.items():
                 if 'hosts' in vars:
-                    print '%s: %s' % (name, ' '.join(vars['hosts']))
+                    print('%s: %s') % (name, ' '.join(vars['hosts']))
         else:
-            print json.dumps(api.inventory, indent=4)
-
+            print(json.dumps(api.inventory, indent=4))
 
 
 def first_with(seq, cond):
@@ -96,6 +100,14 @@ def reconciled(blueprint, inventory):
             return False
 
     return True
+
+
+def api_token_from_env():
+    do_token = 'DIGITAL_OCEAN_TOKEN'
+    if do_token in os.environ:
+        return os.environ[do_token]
+    else:
+        raise LookupError('(required) %s environment variable not found.' % (do_token))
 
 
 class DigitalOceanInventory(object):
@@ -253,6 +265,7 @@ class DigitalOceanInventory(object):
                 n = self.blueprint[group].get('n', 1)
                 if i >= n:
                     self.destroy_droplet(droplet)
+
 
 def install_hostkeys(api):
     for group in api.inventory.values():
