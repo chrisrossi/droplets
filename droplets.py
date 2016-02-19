@@ -40,6 +40,10 @@ def main(api_token, blueprint,
          region='nyc3',
          prefix=''):
     args = docopt(usage)
+
+    if api_token is None:
+        api_token = api_token_from_env()
+
     api = DigitalOceanInventory(
         api_token, blueprint,
         image=image,
@@ -95,6 +99,14 @@ def reconciled(blueprint, inventory):
             return False
 
     return True
+
+
+def api_token_from_env():
+    do_token = 'DIGITAL_OCEAN_TOKEN'
+    if do_token in os.environ:
+        return os.environ[do_token]
+    else:
+        raise LookupError('(required) %s environment variable not found.')
 
 
 class DigitalOceanInventory(object):
