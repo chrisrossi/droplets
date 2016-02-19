@@ -34,11 +34,12 @@ Options:
 """.format(sys.argv[0])
 
 
-def main(api_token, blueprint,
+def main(blueprint,
          image='ubuntu-14-04-x64',
          size='512mb',
          region='nyc3',
-         prefix=''):
+         prefix='',
+         api_token=None,):
     args = docopt(usage)
 
     if api_token is None:

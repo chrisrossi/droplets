@@ -1,32 +1,67 @@
 # droplets
 
-`droplets` aids in the management of Digital Ocean (DO) droplets. It also has the
+`droplets` aids in the management of Digital Ocean (DO) droplets. `droplets` also has the
 ability to act as an inventory script for an Ansible playbook.
 
 ## Using `droplets`
 
 The basic command line usage allows you to build your own script to connect to your
-DO environments. These scripts serve two purposes, the first is the creation and
-repeaing of droplets based on your define blueprint, the second is to act as an
+DO environments. The script serve two purposes. First, the creation and
+destruction of droplets based on defined blueprint. Second, is to act as an
 Ansible invetory script for those droplets.
 
 ### Creating the script
 
-Using `droplets` you'll define your own script for your different DO deployments.
-In your script you will define an `api_token` and `blueprint`.
+Using `droplets` you will define your own script for your different DO deployments.
+In your script you will define a `blueprint`.
 
-You must provide a value for `api_token`, if you supply None, you must set the
-`DIGITAL_OCEAN_TOKEN` environment variable to the token value or else a LookupError
-exception will be raised. Using the environment variable is useful if you intend
-to store your droplets script in a public repository.
+#### Calling main
 
-`blueprint` is a standard python dictionary. It should contain a key entry for
+`main` requires a blueprint and also accepts some optional arguments.
+
+ - `image` (default: ubuntu-14-04-x64)
+ - `size` (default: 512mb)
+ - `region` (default: nyc3)
+ - `prefix` (default: '')
+ - `api_token` (default: None)
+
+The defaults will be used for every instance created unless you explicitly override
+the arguments in your call to main or in the group definition of your blueprint.
+
+`prefix` is useful when creating scripts for different DO envrionments. `prefix` will
+be used when generating the names for the instances of your groups. For example if you
+call `main` with `prefix=staging-` and you have an `app` group defined in your blueprint,
+your instances will have the name `staging-app00`, `staging-app01`, etc...
+
+#### Defining a blueprint
+
+A blueprint is a standard python dictionary. A blueprint should contain a key entry for
 every group. The value of each group should be another dictionary that will act
 as a key/value store for hostvars that will be passed to an ansible playbook.
-The group dictionary has one special key, `n`, which will determine the number of
-instances a group will have (default: 1).
 
-Below is an example of a script for a staging environment.
+A group can contain some special keys which override the default values of `main`.
+
+ - `size` (default: 512mb)
+ - `image` (default: ubuntu-14-04-x64)
+ - `region` (default: nyc3)
+ - `n` (number of instances, default: 1)
+
+Typical group names are things like _app_, _db_, and _loadbalancer_. The `droplet` script
+will use your group name along with the `prefix` (see below) when creating instance names
+
+
+#### API Token
+
+You must also provide an API token. There are two ways to do this. First, you can pass
+the `api_token` keyword argument to the `main` call. Second, you can set the environment
+variable 'DIGITAL_OCEAN_TOKEN' to your token value. The later option is useful if you
+intend to store your droplet script in a public repository.
+
+#### Example
+
+Here is a very simple example of a single application server and single database server blueprint.
+They override none of the default values and the `app` group passes the hostvar `git_branch`
+to the playbook.
 
 ```python
 #!/usr/bin/env python
@@ -34,19 +69,15 @@ Below is an example of a script for a staging environment.
 import sys
 from droplets import main
 
-# Set in DIGITAL_OCEAN_TOKEN environment variable.
-api_token = None
-
 blueprint = {
-    'staging-group': {
-        'n': 5,
-        'copyprod': False,
-        'git-branch': 'staging',
-    }
+    'app': {
+        'git_branch': 'master',
+    },
+    'db': {},
 }
 
 if __name__ == '__main__':
-    main(api_token, blueprint)
+    main(blueprint, api_token='XXX', prefix='staging-')
 ```
 
 ### Running the script
@@ -67,6 +98,10 @@ example
 
 By default, the script will execute as if you have passed in the `--list` option. This allows the
 droplets script to at as an inventory script for the ansible-playbook command.
+
+If we wanted to create these instances to prepare for a playbook run we would use the `--reconcile` option. It is
+worth mentioning that `--reconcile` will not retroactively reconcile changes to `size`, `image`, or `region`.
+You will need to login to DO to make adjustments to size OR use `--destroy` on the group and then `--reconsile`.
 
 ### Running with ansible-playbook
 
