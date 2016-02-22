@@ -109,7 +109,8 @@ def api_token_from_env():
     if do_token in os.environ:
         return os.environ[do_token]
     else:
-        raise LookupError('(required) %s environment variable not found.' % (do_token))
+        raise LookupError(
+            '(required) %s environment variable not found.' % (do_token))
 
 
 class DigitalOceanInventory(object):
@@ -217,11 +218,11 @@ class DigitalOceanInventory(object):
 
     def get_or_install_ssh_key(self):
         """
-        Will make sure that current user's public ssh key is uploaded to Digital
-        Ocean.  Installs the key if it is not already there.  Assumes the user's
-        key is stored locally at `~/.ssh/id_rsa.pub`.  Returns the name of the ssh
-        key as it is known to Digital Ocean.  This will be the key installed on
-        any droplets created by this script.
+        Will make sure that current user's public ssh key is uploaded to
+        Digital Ocean.  Installs the key if it is not already there.  Assumes
+        the user's key is stored locally at `~/.ssh/id_rsa.pub`.  Returns the
+        name of the ssh key as it is known to Digital Ocean.  This will be the
+        key installed on any droplets created by this script.
         """
         keyfile = open(os.path.expanduser('~/.ssh/id_rsa.pub')).read()
         name = keyfile.rsplit(None, 1)[1]
