@@ -63,7 +63,7 @@ def main(blueprint,
         if args['--reconcile'] or args['--human']:
             for name, vars in api.inventory.items():
                 if 'hosts' in vars:
-                    print('%s: %s') % (name, ' '.join(vars['hosts']))
+                    print('%s: %s' % (name, ' '.join(vars['hosts'])))
         else:
             print(json.dumps(api.inventory, indent=4))
 
