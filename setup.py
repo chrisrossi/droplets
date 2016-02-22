@@ -1,6 +1,8 @@
 import os
 from setuptools import setup
 
+VERSION = "1.0dev"
+
 requires = [
     'docopt',
     'ndg-httpsclient',
@@ -19,14 +21,13 @@ try:
 except IOError:
     README = CHANGES = ''
 
-import droplets
-
-setup(name='droplets',
-      version=droplets.__version__,
-      description='Library for building Ansible dynamic inventories for '
-                  'Digital Ocean.',
-      long_description=README + '\n\n' + CHANGES,
-      classifiers=[
+setup(
+    name='droplets',
+    version=VERSION,
+    description='Library for building Ansible dynamic inventories for '
+                'Digital Ocean.',
+    long_description=README + '\n\n' + CHANGES,
+    classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "Programming Language :: Python",
@@ -34,14 +35,15 @@ setup(name='droplets',
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: Implementation :: CPython",
         "License :: Repoze Public License",
-        ],
-      author="Chris Rossi",
-      author_email="chris@armchimedeanco.com",
-      url="http://github.com/chrisrossi/droplets",
-      license="BSD-derived (http://www.repoze.org/LICENSE.txt)",
-      py_modules=["droplets"],
-      include_package_data=True,
-      zip_safe=False,
-      install_requires=requires,
-      setup_requires=setup_requires,
-      tests_require=tests_require)
+    ],
+    author="Chris Rossi",
+    author_email="chris@armchimedeanco.com",
+    url="http://github.com/chrisrossi/droplets",
+    license="BSD-derived (http://www.repoze.org/LICENSE.txt)",
+    py_modules=["droplets"],
+    include_package_data=True,
+    zip_safe=False,
+    install_requires=requires,
+    setup_requires=setup_requires,
+    tests_require=tests_require,
+)

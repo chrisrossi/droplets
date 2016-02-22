@@ -12,7 +12,8 @@ import time
 
 from docopt import docopt
 
-__version__ = "1.0dev"
+__version__ = '1.0dev'
+
 
 usage = """
 Cart Management System server inventory
