@@ -1,7 +1,7 @@
 import os
 from setuptools import setup
 
-VERSION = "1.0dev"
+VERSION = "1.0"
 
 requires = [
     'docopt',
