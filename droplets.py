@@ -148,6 +148,8 @@ class DigitalOceanInventory(object):
 
     def api_call(self, method, path, data=None):
         headers = {'authorization': 'Bearer %s' % self.token}
+        if path.startswith('http:'):
+            path = 'https:' + path[5:]
         if path.startswith('https'):
             url = path
         else:
