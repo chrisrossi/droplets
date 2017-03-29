@@ -24,6 +24,7 @@ Usage:
     {0} --list
     {0} --hostkeys
     {0} --destroy=<group>
+    {0} --images
 
 Options:
     -h --help    Show this screen
@@ -33,6 +34,7 @@ Options:
     --hostkeys   Gets ssh host keys for hosts in inventory and install them in
                  ~/.ssh/known_hosts
     --destroy=<group>    Destroys the droplets in the specified group.
+    --images     Show available Digital Ocean images.
 """.format(sys.argv[0])
 
 
@@ -58,6 +60,10 @@ def main(blueprint,
         install_hostkeys(api)
     elif args['--destroy']:
         destroy_droplets(api, args['--destroy'])
+    elif args['--images']:
+        for image in api.get_images():
+            if image['slug']:
+                print(image['slug'])
     else:
         if args['--reconcile']:
             api.reconcile()
