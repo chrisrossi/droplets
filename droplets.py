@@ -203,7 +203,7 @@ class DigitalOceanInventory(object):
         slug = vars.get('image', self.image)
         size = vars.get('size', self.size)
         region = vars.get('region', self.region)
-        images = sorted(self.get_images(), key=lambda x: x['slug'])
+        images = self.get_images()
         for image in images:
             if image['slug'] == slug:
                 break
