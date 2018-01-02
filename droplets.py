@@ -1,6 +1,6 @@
 """
 Retrieves inventory to use for Ansible from Digital Ocean.  Can automatically
-create any necessary droplets.
+create any necessary droplets or block storage volumes.
 """
 import json
 import os
@@ -39,7 +39,7 @@ Options:
 
 
 def main(blueprint,
-         image='ubuntu-14-04-x64',
+         image='ubuntu-16-04-x64',
          size='512mb',
          region='nyc3',
          prefix='',
@@ -120,6 +120,7 @@ def api_token_from_env():
 
 
 class DigitalOceanInventory(object):
+    _volumes = None
 
     @property
     def inventory(self):
@@ -130,7 +131,7 @@ class DigitalOceanInventory(object):
         return inventory
 
     def __init__(self, token, blueprint,
-                 image='ubuntu-14-04-x64',
+                 image='ubuntu-16-04-x64',
                  size='512mb',
                  region='nyc3',
                  prefix=''):
@@ -239,6 +240,31 @@ class DigitalOceanInventory(object):
             key = self.create_ssh_key(name, keyfile)
         return key
 
+    def get_volumes(self):
+        if self._volumes is None:
+            self._volumes = self.get_all('/volumes', 'volumes')
+        return self._volumes
+
+    def create_volume(self, droplet, name, size, region):
+        parameters = {
+            'name': name,
+            'region': region,
+            'size_gigabytes': size,
+        }
+        data = json.dumps(parameters)
+        response = self.api_call(requests.post, '/volumes', data=data)
+        volume = response.json()['volume']
+
+        parameters = {
+            'type': 'attach',
+            'droplet_id': droplet['id'],
+        }
+        data = json.dumps(parameters)
+        path = '/volumes/{}/actions'.format(volume['id'])
+        self.api_call(requests.post, path, data=data)
+
+        return volume
+
     def _get_inventory(self, create=False):
         inventory = {}
         hostvars = {}
@@ -254,6 +280,17 @@ class DigitalOceanInventory(object):
                     if not create:
                         continue
                     droplet = self.create_droplet(hostname, vars)
+
+                droplet_volumes = vars.pop('volumes', None)
+                if create and droplet_volumes:
+                    volumes = set((v['name'] for v in self.get_volumes()))
+                    for name, size in droplet_volumes.items():
+                        name = self.prefix + name
+                        if name not in volumes:
+                            region = vars.get('region', self.region)
+                            self.create_volume(droplet, name, size, region)
+                            self._volumes = None
+
                 network = get_in(droplet, 'networks', 'v4')
                 if network:
                     host = network[0]['ip_address']
