@@ -154,21 +154,28 @@ class DigitalOceanInventory(object):
         setattr(self, '.inventory', inventory)
 
     def api_call(self, method, path, data=None):
-        headers = {'authorization': 'Bearer %s' % self.token}
-        if path.startswith('http:'):
-            path = 'https:' + path[5:]
-        if path.startswith('https'):
-            url = path
-        else:
-            url = 'https://api.digitalocean.com/v2' + path
-        if data and not isinstance(data, dict):
-            headers['content-type'] = 'application/json'
-        response = method(url, headers=headers, data=data)
-        if response.status_code not in (200, 201, 202, 204):
-            raise Exception(
-                "Unexpected response from Digital Ocean API: %d: %s" % (
-                    response.status_code, response.text))
-        return response
+        while True:
+            headers = {'authorization': 'Bearer %s' % self.token}
+            if path.startswith('http:'):
+                path = 'https:' + path[5:]
+            if path.startswith('https'):
+                url = path
+            else:
+                url = 'https://api.digitalocean.com/v2' + path
+            if data and not isinstance(data, dict):
+                headers['content-type'] = 'application/json'
+            response = method(url, headers=headers, data=data)
+            if response.status_code == 422:
+                # We tried to do something to a droplet that's not ready yet
+                # Wait a few seconds then try again
+                print("Waiting on droplet")
+                time.sleep(4)
+                continue
+            if response.status_code not in (200, 201, 202, 204):
+                raise Exception(
+                    "Unexpected response from Digital Ocean API: %d: %s" % (
+                        response.status_code, response.text))
+            return response
 
     def get_all(self, path, key):
         response = self.api_call(requests.get, path).json()
@@ -201,6 +208,7 @@ class DigitalOceanInventory(object):
         return self.get_all('/droplets', 'droplets')
 
     def create_droplet(self, name, vars):
+        print("Create droplet {}".format(name))
         slug = vars.get('image', self.image)
         size = vars.get('size', self.size)
         region = vars.get('region', self.region)
@@ -223,6 +231,7 @@ class DigitalOceanInventory(object):
         return response['droplet']
 
     def destroy_droplet(self, droplet):
+        print('destroy droplet {}'.format(droplet['name']))
         self.api_call(requests.delete, '/droplets/%d' % droplet['id'])
 
     def get_or_install_ssh_key(self):
@@ -245,7 +254,8 @@ class DigitalOceanInventory(object):
             self._volumes = self.get_all('/volumes', 'volumes')
         return self._volumes
 
-    def create_volume(self, droplet, name, size, region):
+    def create_volume(self, name, size, region):
+        print("Creating volume {}".format(name))
         parameters = {
             'name': name,
             'region': region,
@@ -253,8 +263,11 @@ class DigitalOceanInventory(object):
         }
         data = json.dumps(parameters)
         response = self.api_call(requests.post, '/volumes', data=data)
-        volume = response.json()['volume']
+        return response.json()['volume']
 
+    def attach_volume(self, droplet, volume):
+        print("Attaching volume {} to droplet {}".format(
+            volume['name'], droplet['name']))
         parameters = {
             'type': 'attach',
             'droplet_id': droplet['id'],
@@ -262,8 +275,6 @@ class DigitalOceanInventory(object):
         data = json.dumps(parameters)
         path = '/volumes/{}/actions'.format(volume['id'])
         self.api_call(requests.post, path, data=data)
-
-        return volume
 
     def _get_inventory(self, create=False):
         inventory = {}
@@ -281,15 +292,27 @@ class DigitalOceanInventory(object):
                         continue
                     droplet = self.create_droplet(hostname, vars)
 
-                droplet_volumes = vars.pop('volumes', None)
-                if create and droplet_volumes:
-                    volumes = set((v['name'] for v in self.get_volumes()))
-                    for name, size in droplet_volumes.items():
-                        name = self.prefix + name
-                        if name not in volumes:
-                            region = vars.get('region', self.region)
-                            self.create_volume(droplet, name, size, region)
+                droplet_volumes = vars.get('volumes')
+                if droplet_volumes:
+                    existing = self.get_volumes()
+                    for name, voldata in droplet_volumes.items():
+                        id = self.prefix + name
+                        voldata['id'] = id
+                        volume = first_with(
+                            existing, lambda x: x['name'] == id)
+
+                        if not volume:
+                            if not create:
+                                continue
+                            region = voldata.get('region', vars.get(
+                                'region', self.region))
+                            size = voldata['size']
+                            volume = self.create_volume(id, size, region)
                             self._volumes = None
+
+                        if (create and (not volume['droplet_ids'] or
+                                volume['droplet_ids'][0] != droplet['id'])):
+                            self.attach_volume(droplet, volume)
 
                 network = get_in(droplet, 'networks', 'v4')
                 if network:
