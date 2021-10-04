@@ -16,7 +16,7 @@ __version__ = '1.0dev'
 
 
 usage = """
-Cart Management System server inventory
+Digital Ocean server inventory
 
 Usage:
     {0} --reconcile
@@ -314,11 +314,13 @@ class DigitalOceanInventory(object):
                                 volume['droplet_ids'][0] != droplet['id'])):
                             self.attach_volume(droplet, volume)
 
-                network = get_in(droplet, 'networks', 'v4')
-                if network:
-                    host = network[0]['ip_address']
-                    hosts.append(host)
-                    hostvars[host] = {'droplet': droplet}
+                networks = get_in(droplet, 'networks', 'v4')
+                for network in networks:
+                    if network["type"] == "public":
+                        host = network['ip_address']
+                        hosts.append(host)
+                        hostvars[host] = {'droplet': droplet}
+                        break
 
             inventory[groupname] = {'hosts': hosts, 'vars': vars}
 
