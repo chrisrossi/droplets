@@ -25,6 +25,7 @@ Usage:
     {0} --hostkeys
     {0} --destroy=<group>
     {0} --images
+    {0} --sizes
 
 Options:
     -h --help    Show this screen
@@ -64,6 +65,10 @@ def main(blueprint,
         for image in api.get_images():
             if image['slug']:
                 print(image['slug'])
+    elif args['--sizes']:
+        for size in api.get_sizes():
+            if size['available'] and size['slug']:
+                print("{description} ({slug}): {memory}/{disk} ${price_monthly:0.2f}".format(**size))
     else:
         if args['--reconcile']:
             api.reconcile()
@@ -154,28 +159,21 @@ class DigitalOceanInventory(object):
         setattr(self, '.inventory', inventory)
 
     def api_call(self, method, path, data=None):
-        while True:
-            headers = {'authorization': 'Bearer %s' % self.token}
-            if path.startswith('http:'):
-                path = 'https:' + path[5:]
-            if path.startswith('https'):
-                url = path
-            else:
-                url = 'https://api.digitalocean.com/v2' + path
-            if data and not isinstance(data, dict):
-                headers['content-type'] = 'application/json'
-            response = method(url, headers=headers, data=data)
-            if response.status_code == 422:
-                # We tried to do something to a droplet that's not ready yet
-                # Wait a few seconds then try again
-                print("Waiting on droplet")
-                time.sleep(4)
-                continue
-            if response.status_code not in (200, 201, 202, 204):
-                raise Exception(
-                    "Unexpected response from Digital Ocean API: %d: %s" % (
-                        response.status_code, response.text))
-            return response
+        headers = {'authorization': 'Bearer %s' % self.token}
+        if path.startswith('http:'):
+            path = 'https:' + path[5:]
+        if path.startswith('https'):
+            url = path
+        else:
+            url = 'https://api.digitalocean.com/v2' + path
+        if data and not isinstance(data, dict):
+            headers['content-type'] = 'application/json'
+        response = method(url, headers=headers, data=data)
+        if response.status_code not in (200, 201, 202, 204):
+            raise Exception(
+                "Unexpected response from Digital Ocean API: %d: %s" % (
+                    response.status_code, response.text))
+        return response
 
     def get_all(self, path, key):
         response = self.api_call(requests.get, path).json()
@@ -200,6 +198,9 @@ class DigitalOceanInventory(object):
 
     def get_images(self):
         return self.get_all('/images', 'images')
+
+    def get_sizes(self):
+        return self.get_all('/sizes', 'sizes')
 
     def get_regions(self):
         return self.get_all('/regions', 'regions')
