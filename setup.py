@@ -1,18 +1,20 @@
 import os
 from setuptools import setup
 
-VERSION = "1.3.0"
+VERSION = "2.0.0"
 
-requires = [
+REQUIRES = [
+    "cryptography",
     "docopt",
-    "ndg-httpsclient",
-    "pyasn1",
-    "pyopenssl",
+    "pyyaml",
     "requests",
 ]
 
-setup_requires = ["pytest-runner"]
-tests_require = ["pytest"]
+TESTS_REQUIRE = [
+    "nox",
+    "pytest",
+    "pytest-cover",
+]
 
 here = os.path.abspath(os.path.dirname(__file__))
 try:
@@ -23,31 +25,25 @@ except IOError:
 setup(
     name="droplets",
     version=VERSION,
-    description="Library for building Ansible dynamic inventories for "
-    "Digital Ocean.",
+    description="Library for building Ansible dynamic inventories for Digital Ocean.",
     long_description=README,
     long_description_content_type="text/markdown",
-    classifiers=[
-        "Development Status :: 5 - Production/Stable",
-        "Intended Audience :: Developers",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: Implementation :: CPython",
-        "License :: Repoze Public License",
-    ],
     author="Chris Rossi",
-    author_email="chris@armchimedeanco.com",
+    author_email="chris@christophermrossi.com",
     url="http://github.com/chrisrossi/droplets",
     license="BSD-derived (http://www.repoze.org/LICENSE.txt)",
-    py_modules=["droplets"],
-    include_package_data=True,
-    zip_safe=False,
-    install_requires=requires,
-    setup_requires=setup_requires,
-    tests_require=tests_require,
+    classifiers=[
+        "Intended Audience :: Developers",
+        "Programming Language :: Python",
+        "License :: Repoze Public License",
+    ],
+    install_requires=REQUIRES,
+    extras_require={
+        "testing": TESTS_REQUIRE,
+    },
+    entry_points={
+        "console_scripts": [
+            "secrets = droplets.secrets:secrets_cli",
+        ]
+    },
 )

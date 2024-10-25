@@ -1,7 +1,7 @@
 import pytest
 import os
 
-from droplets import api_token_from_env
+from droplets.ocean import api_token_from_env
 
 
 def test_api_token_from_env():

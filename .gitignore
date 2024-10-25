@@ -3,4 +3,6 @@
 *.pyc
 dist/
 .cache/
+.coverage
+.flake8
 .eggs/

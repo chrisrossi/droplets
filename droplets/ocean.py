@@ -2,17 +2,17 @@
 Retrieves inventory to use for Ansible from Digital Ocean.  Can automatically
 create any necessary droplets or block storage volumes.
 """
+
 import json
 import os
+import pprint
 import re
-import requests
 import subprocess
 import sys
 import time
 
+import requests
 from docopt import docopt
-
-__version__ = "1.0dev"
 
 
 usage = """
@@ -26,6 +26,8 @@ Usage:
     {0} --destroy=<group>
     {0} --images
     {0} --sizes
+    {0} --projects
+    {0} --project <project>
 
 Options:
     -h --help    Show this screen
@@ -43,9 +45,10 @@ Options:
 
 def main(
     blueprint,
-    image="ubuntu-16-04-x64",
-    size="512mb",
-    region="nyc3",
+    *,
+    image,
+    size,
+    region,
     prefix="",
     api_token=None,
 ):
@@ -60,12 +63,15 @@ def main(
 
     if args["--hostkeys"]:
         install_hostkeys(api)
+
     elif args["--destroy"]:
         destroy_droplets(api, args["--destroy"])
+
     elif args["--images"]:
         for image in api.get_images():
             if image["slug"]:
                 print(image["slug"])
+
     elif args["--sizes"]:
         for size in api.get_sizes():
             if size["available"] and size["slug"]:
@@ -74,13 +80,26 @@ def main(
                         **size
                     )
                 )
+
+    elif args["--projects"]:
+        pprint.pprint(api.get_projects())
+
+    elif args["--project"]:
+        id = args["<project>"]
+        project = api.get_project(id)
+        pprint.pprint(project)
+        resources = api.get_project_resources(id)
+        pprint.pprint(resources)
+
     else:
         if args["--reconcile"]:
             api.reconcile()
+
         if args["--reconcile"] or args["--human"]:
             for name, vars in api.inventory.items():
                 if "hosts" in vars:
                     print("%s: %s" % (name, " ".join(vars["hosts"])))
+
         else:
             print(json.dumps(api.inventory, indent=4))
 
@@ -174,9 +193,7 @@ class DigitalOceanInventory(object):
             url = path
         else:
             url = "https://api.digitalocean.com/v2" + path
-        if data and not isinstance(data, dict):
-            headers["content-type"] = "application/json"
-        response = method(url, headers=headers, data=data)
+        response = method(url, headers=headers, json=data)
         if response.status_code not in (200, 201, 202, 204):
             raise Exception(
                 "Unexpected response from Digital Ocean API: %d: %s"
@@ -213,6 +230,17 @@ class DigitalOceanInventory(object):
     def get_regions(self):
         return self.get_all("/regions", "regions")
 
+    def get_projects(self):
+        return self.get_all("/projects", "projects")
+
+    def get_project(self, id):
+        path = f"/projects/{id}"
+        return self.api_call(requests.get, path).json()
+
+    def get_project_resources(self, id):
+        path = f"/projects/{id}/resources"
+        return self.api_call(requests.get, path).json()
+
     def get_droplets(self):
         return self.get_all("/droplets", "droplets")
 
@@ -235,9 +263,7 @@ class DigitalOceanInventory(object):
             "image": image["id"],
             "ssh_keys": [self.ssh_key["id"]],
         }
-        response = self.api_call(
-            requests.post, "/droplets", data=json.dumps(parameters)
-        ).json()
+        response = self.api_call(requests.post, "/droplets", data=parameters).json()
         return response["droplet"]
 
     def destroy_droplet(self, droplet):
@@ -271,8 +297,7 @@ class DigitalOceanInventory(object):
             "region": region,
             "size_gigabytes": size,
         }
-        data = json.dumps(parameters)
-        response = self.api_call(requests.post, "/volumes", data=data)
+        response = self.api_call(requests.post, "/volumes", data=parameters)
         return response.json()["volume"]
 
     def attach_volume(self, droplet, volume):
@@ -283,9 +308,8 @@ class DigitalOceanInventory(object):
             "type": "attach",
             "droplet_id": droplet["id"],
         }
-        data = json.dumps(parameters)
         path = "/volumes/{}/actions".format(volume["id"])
-        self.api_call(requests.post, path, data=data)
+        self.api_call(requests.post, path, data=parameters)
 
     def _get_inventory(self, create=False):
         inventory = {}
